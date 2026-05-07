@@ -1,13 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import '@/styles/globals.css';
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 export const metadata: Metadata = {
   title: 'KnowledgeAI - Enterprise Knowledge Assistant',
@@ -48,7 +41,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans`}>
+      <body className="font-sans">
         <div className="min-h-screen bg-surface-primary transition-colors duration-300">
           {/* Background Pattern */}
           <div className="fixed inset-0 -z-10 overflow-hidden">
