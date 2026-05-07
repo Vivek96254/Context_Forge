@@ -14,8 +14,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Anchor to repo root only — unanchored `lib/` ignored frontend/lib/ (Next.js API client).
+/lib/
+/lib64/
 parts/
 sdist/
 var/
