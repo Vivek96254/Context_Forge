@@ -68,13 +68,17 @@ services:
           name: knowledgeai-backend
           property: url
 
+  # ----------------------------
+  # Redis (managed)
+  # ----------------------------
+  - type: redis
+    name: knowledgeai-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+
 databases:
   - name: knowledgeai-postgres
     plan: starter
     databaseName: rag_db
     user: rag_user
-
-  - name: knowledgeai-redis
-    plan: starter
-    type: redis
 
