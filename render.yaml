@@ -1,0 +1,80 @@
+services:
+  # ----------------------------
+  # Backend (API) + Celery worker
+  # ----------------------------
+  #
+  # NOTE: The retrieval indexes (FAISS + BM25) are stored on disk.
+  # Celery ingestion updates those files. Render services do not share disks,
+  # so we run API + worker in the same service with one persistent disk.
+  - type: web
+    name: knowledgeai-backend
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /health
+    startCommand: >
+      sh -lc
+      "celery -A worker.celery_app worker --loglevel=info --concurrency=2 &
+       uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
+    disk:
+      name: knowledgeai-data
+      mountPath: /app/data
+      sizeGB: 10
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CEREBRAS_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: knowledgeai-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: knowledgeai-redis
+          property: connectionString
+      # Persisted paths (mounted disk)
+      - key: VECTOR_STORE_PATH
+        value: /app/data/faiss_index
+      - key: UPLOAD_DIR
+        value: /app/data/uploads
+      - key: FAISS_INDEX_PATH
+        value: /app/data/faiss_index/index.faiss
+      - key: FAISS_MAPPING_PATH
+        value: /app/data/faiss_index/mapping.json
+      - key: BM25_INDEX_PATH
+        value: /app/data/faiss_index/bm25_index.pkl
+
+  # ----------------------------
+  # Frontend (Next.js)
+  # ----------------------------
+  - type: web
+    name: knowledgeai-frontend
+    env: docker
+    plan: starter
+    rootDir: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          type: web
+          name: knowledgeai-backend
+          property: url
+
+databases:
+  - name: knowledgeai-postgres
+    plan: starter
+    databaseName: rag_db
+    user: rag_user
+
+  - name: knowledgeai-redis
+    plan: starter
+    type: redis
+
