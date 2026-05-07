@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Use existing PostgreSQL and Redis (running on host)
+  # Backend connects to localhost:5432 and localhost:6379
+  
+  backend:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+      - shared_data:/app/data
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - DATABASE_URL=postgresql://rag_user:rag_password@host.docker.internal:5432/rag_db
+      - REDIS_URL=redis://host.docker.internal:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - LLM_PROVIDER=${LLM_PROVIDER:-cerebras}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  celery_worker:
+    build: .
+    command: celery -A worker.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - ./backend:/app
+      - shared_data:/app/data
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - DATABASE_URL=postgresql://rag_user:rag_password@host.docker.internal:5432/rag_db
+      - REDIS_URL=redis://host.docker.internal:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - LLM_PROVIDER=${LLM_PROVIDER:-cerebras}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  shared_data:
